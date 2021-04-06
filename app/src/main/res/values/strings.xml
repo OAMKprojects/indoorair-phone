@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">indAirPhone</string>
+    <string name="title">INDOOR AIR ADMIN</string>
+    <string name="password">Password</string>
+    <string name="ipaddress">IP Address</string>
+    <string name="login">Log In</string>
+    <string name="logout">Log Out</string>
+    <string name="port">Port Number</string>
+    <string name="logintext">Logging in...</string>
+    <string name="temperature">Temperature</string>
+    <string name="humidity">Humidity</string>
+</resources>
