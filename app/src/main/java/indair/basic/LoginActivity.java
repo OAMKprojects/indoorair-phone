@@ -13,7 +13,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 
-
 public class LoginActivity extends Fragment implements NetworkCallBack
 {
     private Button loginButton;
@@ -24,9 +23,15 @@ public class LoginActivity extends Fragment implements NetworkCallBack
     private Network  net;
     private State    net_state;
     private MainCallBack main;
+    private Crypto   crypto;
 
-    private enum State{
-        connect
+    private final String server_phrase = "Enter Password";
+    private final String server_log_ok = "Welcome to Indoor Air server";
+
+    public enum State{
+        nothing,
+        connect,
+        password
     }
 
     @Override
@@ -82,25 +87,45 @@ public class LoginActivity extends Fragment implements NetworkCallBack
     @Override
     public void connected()
     {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                net.readMessage(2000);
-            }
-        });
+        net.readMessage(2000);
     }
 
     @Override
-    public void messageReceived(final String s)
+    public void messageReceived(final String message)
     {
         switch (net_state) {
             case connect:
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        String s2 = "Welcome to Server";
-                        if (s.equals(s2)) txtLogIn.setText(s);
-                        else txtLogIn.setText("Incorrect password!");
+                        if (crypto.decode(message).equals(server_phrase)) {
+                            net_state = State.password;
+
+                            txtLogIn.setText(server_phrase);
+                            net.sendMessage(crypto.encode(passwordEdit.getText().toString()));
+                            net.readMessage(2000);
+                        }
+                        else {
+                            txtLogIn.setText("Incorrect Host!");
+                            loginButton.setEnabled(true);
+                        }
+                    }
+                });
+                break;
+
+            case password:
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (crypto.decode(message).equals(server_log_ok)) {
+                            net_state = State.connect;
+
+                            main.changeActivity(1);
+                        }
+                        else {
+                            txtLogIn.setText(crypto.decode(message));
+                            loginButton.setEnabled(true);
+                        }
                     }
                 });
                 break;
@@ -111,7 +136,7 @@ public class LoginActivity extends Fragment implements NetworkCallBack
     public void networkError(int err_code)
     {
         switch (net_state) {
-            case connect:
+            case connect: case password:
                 switch (err_code) {
                     case Network.UNKNOWN_HOST:
                         getActivity().runOnUiThread(new Runnable() {
@@ -119,7 +144,6 @@ public class LoginActivity extends Fragment implements NetworkCallBack
                             public void run() {
                                 txtLogIn.setText("Unknown host!");
                                 loginButton.setEnabled(true);
-                                main.changeActivity(1);
                             }
                         });
                         break;
@@ -146,10 +170,16 @@ public class LoginActivity extends Fragment implements NetworkCallBack
         }
     }
 
+    public void setNetState(State stat)
+    {
+        net_state = stat;
+    }
+
     public void init(Network network, MainCallBack callBack)
     {
         net = network;
         main = callBack;
+        crypto = new Crypto();
     }
 
     private void logIn()

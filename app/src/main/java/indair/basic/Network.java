@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.net.SocketException;
@@ -22,6 +23,7 @@ public class Network
     private NetworkCallBack callBack;
     private Timer timer;
     private Readmessage message_thread;
+    private Thread read_thread;
 
     public final static int UNKNOWN_HOST       = 0;
     public final static int CONNECTION_ERROR   = 1;
@@ -31,6 +33,7 @@ public class Network
     {
         timer = new Timer();
         message_thread = new Readmessage();
+        read_thread = new Thread();
     }
 
     public void setCallBack(NetworkCallBack c)
@@ -59,51 +62,51 @@ public class Network
         }).start();
     }
 
-    public int close()
+    public void close()
     {
-        if (sock.isClosed()) return 0;
+        if (sock.isClosed()) return;
 
-        try {
-            sock.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return -1;
-        }
-        return 0;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (read_thread.isAlive()) read_thread.interrupt();
+                    reader.close();
+                    printer.close();
+                    sock.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return ;
+                }
+            }
+        }).start();
     }
 
-    public int sendMessage(String message)
+    public void sendMessage(final String message)
     {
-        try {
-            printer.write(message);
-        } catch (IOException e) {
-            callBack.networkError(CONNECTION_ERROR);
-            return -1;
-        }
-
-        return 0;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    printer.write(message);
+                    printer.flush();
+                } catch (IOException e) {
+                    callBack.networkError(CONNECTION_ERROR);
+                    return;
+                }
+            }
+        }).start();
     }
 
     public void readMessage(final int timeout_ms)
     {
-
-        /*if (timeout_ms > 0) {
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    message_thread.stopRunning();
-                    callBack.networkError(CONNECTION_TIMEOUT);
-                    return;
-                }
-            }, timeout_ms);
-        }*/
-
         try {
             sock.setSoTimeout(timeout_ms);
         } catch (SocketException e) {
             callBack.networkError(CONNECTION_ERROR);
         }
-        new Thread(message_thread).start();
+        read_thread = new Thread(message_thread);
+        read_thread.start();
     }
 
     private class Readmessage implements Runnable {
@@ -115,13 +118,14 @@ public class Network
             char c[] = new char[1024];
             while (running) {
                 try {
-                        //if (reader.ready()) {
-                            reader.read(c, 0, 1024);
-                            message.append(c);
-                        //}
+                    reader.read(c, 0, 1024);
+                    message.append(c);
 
-                } catch (SocketTimeoutException e) {
-                    callBack.networkError(CONNECTION_TIMEOUT);
+                } catch (InterruptedIOException e) {
+                    if (e instanceof SocketTimeoutException) {
+                        callBack.networkError(CONNECTION_ERROR);
+                        return;
+                    }
                     return;
                 } catch (IOException e) {
                     callBack.networkError(CONNECTION_ERROR);
