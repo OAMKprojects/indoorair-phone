@@ -22,64 +22,10 @@
         app:layout_constraintVertical_bias="0.478">
 
         <TableLayout
+            android:id="@+id/valueTable"
             android:layout_width="320dp"
             android:layout_height="440dp"
             android:gravity="center">
-
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center">
-
-                <TextView
-                    android:id="@+id/textViewTemperatureTxt"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="left"
-                    android:text="@string/temperature"
-                    android:textSize="24sp" />
-
-                <Space
-                    android:layout_width="60dp"
-                    android:layout_height="wrap_content" />
-
-                <TextView
-                    android:id="@+id/textViewTemperatureVal"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="right"
-                    android:text="0"
-                    android:textColor="@color/colorLightBlue"
-                    android:textSize="24sp" />
-            </TableRow>
-
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center">
-
-                <TextView
-                    android:id="@+id/textViewHumidityTxt"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="left"
-                    android:text="@string/humidity"
-                    android:textSize="24sp" />
-
-                <Space
-                    android:layout_width="60dp"
-                    android:layout_height="wrap_content" />
-
-                <TextView
-                    android:id="@+id/textViewHumidityVal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="right"
-                    android:text="0"
-                    android:textColor="@color/colorLightBlue"
-                    android:textSize="24sp" />
-            </TableRow>
-
         </TableLayout>
 
         <Button
