@@ -7,6 +7,8 @@
     android:layout_height="match_parent"
     tools:context=".AppActivity">
 
+
+
     <LinearLayout
         android:id="@+id/mainLayout"
         android:layout_width="match_parent"
@@ -21,12 +23,62 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.478">
 
-        <TableLayout
-            android:id="@+id/valueTable"
+        <TextView
+            android:id="@+id/textValues"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:gravity="center"
+            android:textSize="24sp"
+            android:textColor="@color/colorPrimaryDark"
+            android:text="@string/valueText" />
+
+        <ScrollView
             android:layout_width="320dp"
-            android:layout_height="440dp"
-            android:gravity="center">
-        </TableLayout>
+            android:layout_height="160dp">
+
+            <TableLayout
+                android:id="@+id/valueTable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"></TableLayout>
+
+        </ScrollView>
+
+        <TextView
+            android:id="@+id/textControls"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:gravity="center"
+            android:textSize="24sp"
+            android:textColor="@color/colorPrimaryDark"
+            android:text="@string/controlText" />
+
+        <ScrollView
+            android:layout_width="320dp"
+            android:layout_height="160dp">
+
+            <TableLayout
+                android:id="@+id/controlTable"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"></TableLayout>
+
+        </ScrollView>
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="32dp" />
+
+        <Button
+            android:id="@+id/buttonUpdate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:enabled="false"
+            android:text="@string/update" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="16dp" />
 
         <Button
             android:id="@+id/buttonLogout"
@@ -40,6 +92,10 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="16dp" />
 
     </LinearLayout>
 

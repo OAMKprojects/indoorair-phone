@@ -9,4 +9,7 @@
     <string name="logintext">Logging in...</string>
     <string name="temperature">Temperature</string>
     <string name="humidity">Humidity</string>
+    <string name="valueText">INFO</string>
+    <string name="controlText">SETTINGS</string>
+    <string name="update">Update Changes</string>
 </resources>

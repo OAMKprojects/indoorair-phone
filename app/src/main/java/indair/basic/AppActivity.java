@@ -4,11 +4,14 @@ import android.app.Fragment;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
+import android.text.InputFilter;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Space;
@@ -16,9 +19,13 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -26,12 +33,16 @@ import java.util.Map;
 public class AppActivity extends Fragment implements NetworkCallBack {
 
     private Button logOutButton;
+    private Button updateButton;
+    private EditText currentEdit;
+    private String oldEditText;
     private TextView logView;
     private Network  net;
     private MainCallBack main;
     private Crypto crypto;
     private View view;
     private Map<String, TextView> value_map;
+    private Map<String, EditText> control_map;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -39,8 +50,11 @@ public class AppActivity extends Fragment implements NetworkCallBack {
         view =  inflater.inflate(R.layout.activity_app, container, false);
 
         logOutButton = view.findViewById(R.id.buttonLogout);
+        updateButton = view.findViewById(R.id.buttonUpdate);
         logView = view.findViewById(R.id.logView);
         value_map = new HashMap<String, TextView>();
+        control_map = new HashMap<String, EditText>();
+        oldEditText = new String();
 
         logOutButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -80,32 +94,12 @@ public class AppActivity extends Fragment implements NetworkCallBack {
     @Override
     public void networkError(int err_code)
     {
-        switch (err_code) {
-            case Network.UNKNOWN_HOST:
-                getActivity().runOnUiThread(new Runnable() {
+        getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         main.changeActivity(0);
                     }
                 });
-                break;
-            case Network.CONNECTION_ERROR:
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        main.changeActivity(0);
-                    }
-                });
-                break;
-            case Network.CONNECTION_TIMEOUT:
-                getActivity().runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        main.changeActivity(0);
-                    }
-                });
-                break;
-        }
     }
 
     private void parseJSON(String json_message)
@@ -115,12 +109,29 @@ public class AppActivity extends Fragment implements NetworkCallBack {
 
             if (json.has("values")) {
 
+                TableLayout table = view.findViewById(R.id.valueTable);
                 JSONObject values = json.getJSONObject("values");
                 Iterator<String> name_it = values.keys();
 
                 while(name_it.hasNext()) {
                     String name = name_it.next();
-                    updateOldRow(name, values.getString(name));
+                    updateOldRow(name, values.getString(name), table);
+                }
+            }
+
+            if (json.has("controls")) {
+
+                TableLayout table = view.findViewById(R.id.controlTable);
+                JSONObject values = json.getJSONObject("controls");
+                Iterator<String> name_it = values.keys();
+
+                while(name_it.hasNext()) {
+                    String name = name_it.next();
+                    JSONArray control_array = values.getJSONArray(name);
+                    JSONObject control_obj = control_array.getJSONObject(0);
+                    String control_value = control_obj.getString("value");
+                    String control_type = control_obj.getString("type");
+                    updateOldControlRow(name, control_value, control_type, table);
                 }
             }
         } catch (JSONException e) {
@@ -131,7 +142,7 @@ public class AppActivity extends Fragment implements NetworkCallBack {
         if (logView.length() > 0) logView.setText("");
     }
 
-    private void createNewRow(String name, String value)
+    private void createNewRow(String name, String value, TableLayout table)
     {
         TableRow new_row = new TableRow(getContext());
         new_row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
@@ -156,19 +167,137 @@ public class AppActivity extends Fragment implements NetworkCallBack {
         new_row.addView(new_space);
         new_row.addView(new_value);
 
-        TableLayout tb = view.findViewById(R.id.valueTable);
-        tb.addView(new_row);
-
+        table.addView(new_row);
         value_map.put(name, new_value);
     }
 
-    private void updateOldRow(String name, String value)
+    private void createNewControlRow(String name, String value, TableLayout table, int type)
+    {
+        TableRow new_row = new TableRow(getContext());
+        new_row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+        new_row.setGravity(Gravity.CENTER);
+
+        final Button new_name = new Button(getContext());
+        new_name.setText(name);
+        new_name.setTextSize(16);
+        new_name.setTextColor(Color.BLACK);
+        new_name.setGravity(Gravity.LEFT);
+
+        Space new_space = new Space(getContext());
+        new_space.setLayoutParams(new TableRow.LayoutParams(60, TableRow.LayoutParams.MATCH_PARENT));
+
+        EditText new_value = new EditText(getContext());
+        new_value.setText(value);
+        new_value.setTextSize(24);
+        new_value.setGravity(Gravity.RIGHT);
+        new_value.setTextColor(Color.WHITE);
+        new_value.setClickable(false);
+        new_value.setFocusableInTouchMode(false);
+        new_value.setBackgroundResource(android.R.color.transparent);
+
+        switch (type) {
+            case 0:
+                new_value.setTextColor(Color.WHITE);
+
+                new_name.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        changeControlValue(new_name.getText().toString());
+                    }
+                });
+                break;
+            case 1:
+                new_value.setInputType(InputType.TYPE_CLASS_DATETIME | InputType.TYPE_DATETIME_VARIATION_TIME);
+                new_value.setTextColor(Color.BLUE);
+                InputFilter[] FilterArray = new InputFilter[1];
+                FilterArray[0] = new InputFilter.LengthFilter(8);
+                new_value.setFilters(FilterArray);
+
+                new_name.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        changeControlValue(new_name.getText().toString());
+                    }
+                });
+                break;
+        }
+
+        new_row.addView(new_name);
+        new_row.addView(new_space);
+        new_row.addView(new_value);
+
+        table.addView(new_row);
+        control_map.put(name, new_value);
+    }
+
+    private void changeControlValue(String name)
+    {
+        if (!control_map.containsKey(name)) return;
+        EditText item = control_map.get(name);
+
+        if (item.getCurrentTextColor() == Color.WHITE) {
+            if (item.getText().toString().matches("false")) item.setText("true");
+                else item.setText("false");
+        }
+        else {
+            oldEditText = item.getText().toString();
+            currentEdit = item;
+            currentEdit.setHint("hh:mm:ss");
+            currentEdit.setText("");
+            currentEdit.setFocusableInTouchMode(true);
+            currentEdit.requestFocus();
+            currentEdit.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                }
+
+                @Override
+                public void afterTextChanged(Editable s) {
+                    if (s.length() == 8) {
+                        String string = currentEdit.getText().toString();
+                        DateFormat formatter = new SimpleDateFormat("hh:mm:ss");
+                        try {
+                            formatter.parse(string);
+                        } catch (ParseException e) {
+                            currentEdit.setText(oldEditText);
+                        }
+                        currentEdit.setFocusableInTouchMode(false);
+                        currentEdit.clearFocus();
+                        getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+                    }
+                }
+            });
+
+            getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        }
+
+        updateButton.setEnabled(true);
+    }
+
+    private void updateOldRow(String name, String value, TableLayout table)
     {
         if (value_map.containsKey(name)) {
             TextView old_value = value_map.get(name);
             old_value.setText(value);
         }
-        else createNewRow(name, value);
+        else createNewRow(name, value, table);
+    }
+
+    private void updateOldControlRow(String name, String value, String control_type, TableLayout table)
+    {
+        if (control_map.containsKey(name)) return;
+        int type = 0;
+
+        if (control_type.matches("boolean")) type = 0;
+        else if (control_type.matches("time")) type = 1;
+
+        createNewControlRow(name, value, table, type);
     }
 
     public void startListenig()
