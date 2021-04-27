@@ -52,8 +52,8 @@ public class AppActivity extends Fragment implements NetworkCallBack {
         logOutButton = view.findViewById(R.id.buttonLogout);
         updateButton = view.findViewById(R.id.buttonUpdate);
         logView = view.findViewById(R.id.logView);
-        value_map = new HashMap<String, TextView>();
-        control_map = new HashMap<String, EditText>();
+        value_map = new HashMap<>();
+        control_map = new HashMap<>();
         oldEditText = new String();
 
         logOutButton.setOnClickListener(new View.OnClickListener() {
@@ -69,6 +69,24 @@ public class AppActivity extends Fragment implements NetworkCallBack {
             }
         });
 
+        updateButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                JSONObject message_obj = new JSONObject();
+                for(Map.Entry<String, EditText> item : control_map.entrySet()) {
+                    try {
+                        message_obj.put(item.getKey(), item.getValue().getText().toString());
+                    } catch (JSONException e) {
+                        return;
+                    }
+                }
+                net.sendMessage(crypto.encode(message_obj.toString()));
+                updateButton.setEnabled(false);
+            }
+        });
+
+        net.sendMessage(crypto.encode("{\"controls updated\":\"false\"}"));
+
         return view;
     }
 
@@ -81,7 +99,16 @@ public class AppActivity extends Fragment implements NetworkCallBack {
     @Override
     public void messageReceived(final String message)
     {
-        getActivity().runOnUiThread(new Runnable() {
+        if (message.matches("")) {
+            getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    main.changeActivity(0);
+                }
+            });
+            return;
+        }
+        else getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 parseJSON(crypto.decode(message));
@@ -117,6 +144,19 @@ public class AppActivity extends Fragment implements NetworkCallBack {
                     String name = name_it.next();
                     updateOldRow(name, values.getString(name), table);
                 }
+                if (!values.has("error")) {
+                    if (value_map.containsKey("error")) {
+                        value_map.remove("error");
+                        for (int i = 0; i < table.getChildCount(); i++) {
+                            TableRow row = (TableRow) table.getChildAt(i);
+                            TextView text = (TextView)row.getChildAt(0);
+                            if (text.getText().toString().matches("error")) {
+                                table.removeViewAt(i);
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             if (json.has("controls")) {
@@ -133,6 +173,8 @@ public class AppActivity extends Fragment implements NetworkCallBack {
                     String control_type = control_obj.getString("type");
                     updateOldControlRow(name, control_value, control_type, table);
                 }
+
+                net.sendMessage(crypto.encode("{\"controls updated\":\"true\"}"));
             }
         } catch (JSONException e) {
             logView.setText(json_message);
@@ -150,7 +192,7 @@ public class AppActivity extends Fragment implements NetworkCallBack {
 
         TextView new_name = new TextView(getContext());
         new_name.setText(name);
-        new_name.setTextSize(24);
+        new_name.setTextSize(18);
         new_name.setTextColor(Color.BLACK);
         new_name.setGravity(Gravity.LEFT);
 
@@ -159,7 +201,7 @@ public class AppActivity extends Fragment implements NetworkCallBack {
 
         TextView new_value = new TextView(getContext());
         new_value.setText(value);
-        new_value.setTextSize(24);
+        new_value.setTextSize(18);
         new_value.setTextColor(Color.BLUE);
         new_value.setGravity(Gravity.RIGHT);
 
@@ -167,7 +209,9 @@ public class AppActivity extends Fragment implements NetworkCallBack {
         new_row.addView(new_space);
         new_row.addView(new_value);
 
-        table.addView(new_row);
+        if (name.matches("error")) table.addView(new_row, 0);
+        else table.addView(new_row);
+
         value_map.put(name, new_value);
     }
 
@@ -180,7 +224,7 @@ public class AppActivity extends Fragment implements NetworkCallBack {
         final Button new_name = new Button(getContext());
         new_name.setText(name);
         new_name.setTextSize(16);
-        new_name.setTextColor(Color.BLACK);
+        new_name.setTextColor(Color.BLUE);
         new_name.setGravity(Gravity.LEFT);
 
         Space new_space = new Space(getContext());
@@ -207,7 +251,7 @@ public class AppActivity extends Fragment implements NetworkCallBack {
                 });
                 break;
             case 1:
-                new_value.setInputType(InputType.TYPE_CLASS_DATETIME | InputType.TYPE_DATETIME_VARIATION_TIME);
+                new_value.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
                 new_value.setTextColor(Color.BLUE);
                 InputFilter[] FilterArray = new InputFilter[1];
                 FilterArray[0] = new InputFilter.LengthFilter(8);
@@ -259,6 +303,10 @@ public class AppActivity extends Fragment implements NetworkCallBack {
 
                 @Override
                 public void afterTextChanged(Editable s) {
+                    if (s.length() == 2 || s.length() == 5) {
+                        String str = ':' + s.toString();
+                        currentEdit.setText(str);
+                    }
                     if (s.length() == 8) {
                         String string = currentEdit.getText().toString();
                         DateFormat formatter = new SimpleDateFormat("hh:mm:ss");
@@ -291,7 +339,11 @@ public class AppActivity extends Fragment implements NetworkCallBack {
 
     private void updateOldControlRow(String name, String value, String control_type, TableLayout table)
     {
-        if (control_map.containsKey(name)) return;
+        if (control_map.containsKey(name)) {
+            EditText old_value = control_map.get(name);
+            old_value.setText(value);
+            return;
+        }
         int type = 0;
 
         if (control_type.matches("boolean")) type = 0;

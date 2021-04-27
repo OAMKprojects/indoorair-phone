@@ -35,15 +35,15 @@ public class MainActivity extends AppCompatActivity implements MainCallBack
 
         switch (act) {
             case 0:
+                net.setCallBack(loginScreen);
                 fragmentTransaction.replace(R.id.mainLayout, loginScreen);
                 fragmentTransaction.commit();
                 loginScreen.setNetState(LoginActivity.State.nothing);
-                net.setCallBack(loginScreen);
                 break;
             case 1:
+                net.setCallBack(appScreen);
                 fragmentTransaction.replace(R.id.mainLayout, appScreen);
                 fragmentTransaction.commit();
-                net.setCallBack(appScreen);
                 appScreen.startListenig();
                 break;
         }
