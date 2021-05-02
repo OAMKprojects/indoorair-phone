@@ -14,7 +14,7 @@ gradle.properties
 gradlew
 settings.graddle
 .DS_Store
-/build
+app/build
 /captures
 .externalNativeBuild
 .cxx

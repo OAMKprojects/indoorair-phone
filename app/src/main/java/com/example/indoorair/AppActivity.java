@@ -1,4 +1,4 @@
-package indair.basic;
+package com.example.indoorair;
 
 import android.app.Fragment;
 import android.graphics.Color;

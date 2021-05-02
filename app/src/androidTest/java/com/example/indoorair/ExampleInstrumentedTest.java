@@ -1,6 +1,7 @@
-package indair.basic;
+package com.example.indoorair;
 
 import android.content.Context;
+
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -20,7 +21,6 @@ public class ExampleInstrumentedTest {
     public void useAppContext() {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getInstrumentation().getTargetContext();
-
-        assertEquals("indair.basic", appContext.getPackageName());
+        assertEquals("com.example.indoorair", appContext.getPackageName());
     }
 }

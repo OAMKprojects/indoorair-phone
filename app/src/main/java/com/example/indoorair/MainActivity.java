@@ -1,4 +1,4 @@
-package indair.basic;
+package com.example.indoorair;
 
 import androidx.appcompat.app.AppCompatActivity;
 

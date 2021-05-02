@@ -1,4 +1,4 @@
-package indair.basic;
+package com.example.indoorair;
 
 import org.junit.Test;
 

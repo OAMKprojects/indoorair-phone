@@ -1,4 +1,4 @@
-package indair.basic;
+package com.example.indoorair;
 
 import android.app.Fragment;
 import android.os.Bundle;
@@ -117,7 +117,7 @@ public class LoginActivity extends Fragment implements NetworkCallBack
                 getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if (crypto.decode(message).equals(server_log_ok)) {
+                        if (crypto.decode(message).regionMatches(0, server_log_ok, 0, server_log_ok.length())) {
                             net_state = State.connect;
 
                             main.changeActivity(1);
